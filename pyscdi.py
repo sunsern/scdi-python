@@ -150,7 +150,7 @@ class Kws(BaseBucket):
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
             LOGGER.warn(r.text)
-        return r.text
+        return r.content
 
     def get_object_url(self, objectName):
         uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName
@@ -249,10 +249,10 @@ class Keyvalue(BaseBucket):
         uri = API_URL + self._conn._username + '/' + self._bucketname
         r = self._conn._make_request('POST', uri, params={'key' : key}, data=value)
         r.raise_for_status()
-        return r.text
+        return r.content
 
     def get(self, key):
         uri = API_URL + self._conn._username + '/' + self._bucketname
         r = self._conn._make_request('GET', uri, params={'key' : key})
         r.raise_for_status()
-        return r.text
+        return r.content
