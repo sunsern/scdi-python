@@ -1,11 +1,8 @@
 from __future__ import division, print_function
 from .utils import md5, md5_ba, getSize
-
+from .settings import API_URL
 import requests
 import logging
-
-BASE_URL = 'https://scdi-api.philinelabs.net'
-API_URL = BASE_URL + '/api/v1/'
 
 formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 handler = logging.StreamHandler()
@@ -13,7 +10,6 @@ handler.setFormatter(formatter)
 LOGGER = logging.getLogger('scdi')
 LOGGER.setLevel(logging.DEBUG)
 LOGGER.addHandler(handler)
-
 
 class Scdi:
     """SCDI Connection
@@ -183,6 +179,15 @@ class Scdi:
         except requests.exceptions.HTTPError as e:
             LOGGER.warn(r.text)
         return r
+
+    def get_buckets(self):
+        """Get all buckets."""
+        uri = API_URL + self._username
+        r = self._make_request('GET', uri)
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return []
 
 class BaseBucket:
     """Base class for bucket"""
