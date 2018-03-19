@@ -1,7 +1,8 @@
 from __future__ import division, print_function
+from .utils import md5, md5_ba, getSize
+
 import requests
 import logging
-from utils import md5, md5_ba, getSize
 
 BASE_URL = 'https://scdi-api.philinelabs.net'
 API_URL = BASE_URL + '/api/v1/'
