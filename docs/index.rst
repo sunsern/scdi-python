@@ -20,18 +20,32 @@ Connecting to SCDI
 
 Bucket Types
 ============
+
+There are currently 4 buckets types.
+
+KWS Bucket
+----------
 .. autoclass:: pyscdi.Kws
  :members:
+ :inherited-members:
 
+Timeseries Bucket
+-----------------
 .. autoclass:: pyscdi.Timeseries
   :members:
+  :inherited-members:
 
+Geotemporal Bucket
+------------------
 .. autoclass:: pyscdi.Geotemporal
   :members:
+  :inherited-members:
 
+Keyvalue Bucket
+---------------
 .. autoclass:: pyscdi.Keyvalue
   :members:
-
+  :inherited-members:
 
 Indices and tables
 ==================
