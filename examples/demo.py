@@ -1,14 +1,13 @@
 from __future__ import division, print_function
 from pyscdi import Scdi
 
-# 
+# Specify username and apikey
 USERNAME = ''
 APIKEY = ''
 
 def keyvalue_demo():
     conn = Scdi(USERNAME, APIKEY)
     bucketname = 'kv_demo'
-
     bucket = conn.create_keyvalue_bucket(bucketname)
     bucket.put('testkey','123')
     print('value:', bucket.get('testkey'))
@@ -18,10 +17,12 @@ def kws_demo():
     conn = Scdi(USERNAME, APIKEY)
     bucketname = 'kws_demo'
     bucket = conn.create_kws_bucket(bucketname)
-    bucket.put_object('example.py', './example.py')
-    print(bucket.get_object_url('example.py'))
-    print(bucket.get_object('example.py'))
-    bucket.get_object_as_file('example.py', 'dummy')
+    bucket.put_object('random.txt', './random.txt')
+    print(bucket.get_object_url('random.txt'))
+    print(bucket.get_object('random.txt'))
+    bucket.get_object_as_file('random.txt', 'dummy')
+    print(conn.get_buckets())
+    print(bucket.list_objects())
     conn.drop_bucket(bucketname)
 
 def timeseries_demo():
@@ -55,7 +56,7 @@ def timeseries_demo():
     	   "rain" : 12.0,
     	   "temp": 20.0
         })
-    print(bucket.query())
+    print(bucket.query(limit=1))
 
     bucket.add_rows([
         {
