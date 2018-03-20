@@ -13,9 +13,13 @@ Welcome to SCDI's documentation!
 .. automodule:: pyscdi
  :members:
 
+Connecting to SCDI
+===================
 .. autoclass:: pyscdi.Scdi
  :members:
 
+Bucket Types
+============
 .. autoclass:: pyscdi.Kws
  :members:
 
