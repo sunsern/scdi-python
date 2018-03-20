@@ -189,6 +189,7 @@ class Scdi:
         else:
             return []
 
+
 class BaseBucket:
     """Base class for bucket"""
     def __init__(self, conn, bucketname):
@@ -202,6 +203,15 @@ class BaseBucket:
             return r.json()
         else:
             return None
+
+    def list_objects(self):
+        """List objects in a bucket."""
+        uri = API_URL + self._conn._username + '/' + self._bucketname + '?list'
+        r = self._conn._make_request('GET', uri)
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return []
 
 class Kws(BaseBucket):
     """KWS Bucket"""
