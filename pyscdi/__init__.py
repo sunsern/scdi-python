@@ -4,4 +4,4 @@
 
 """
 from .main import Scdi
-from .main import Kws, Timeseries, Geotemporal, Keyvalue
+from .main import Kws, Timeseries, Geotemporal, Keyvalue, Tabular

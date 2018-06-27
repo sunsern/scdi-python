@@ -49,6 +49,37 @@ class Scdi:
             LOGGER.error("Connection error!")
             raise e
 
+    def create_tabular_bucket(self, bucketname, columns):
+        """Creates a generic tabular bucket.
+
+        Args:
+           bucketname (str): name of the bucket.
+           columns (list): a list of columns.
+
+        """
+        uri = API_URL + self._username + '/' + bucketname + '?create'
+        payload = dict()
+        payload['type'] = 'tabular'
+        payload['columns'] = columns
+        try:
+            r = self._make_request('POST', uri, json=payload)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            LOGGER.warn(r.text)
+        return Tabular(self, bucketname)
+
+    def get_tabular_bucket(self, bucketname):
+        """Connects to an existing tabular bucket.
+
+        Args:
+           bucketname (str): name of the bucket.
+
+        """
+        bucket = Tabular(self, bucketname)
+        if bucket.get_info() is None:
+            raise Exception("Bucket not found")
+        return bucket
+
     def create_timeseries_bucket(self, bucketname, columns):
         """Creates a new timeseries bucket.
 
@@ -400,6 +431,9 @@ class Timeseries(BaseBucket):
             return []
 
 class Geotemporal(Timeseries):
+    pass
+
+class Tabular(Timeseries):
     pass
 
 class Keyvalue(BaseBucket):
