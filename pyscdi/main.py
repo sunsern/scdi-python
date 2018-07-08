@@ -19,7 +19,7 @@ class Scdi:
 
     """
 
-    def __init__(self, username, api_key):
+    def __init__(self, username, api_key, api_url=API_URL):
         """SCDI connector class.
 
         Args:
@@ -31,6 +31,7 @@ class Scdi:
         self._api_key = api_key
         self._headers = { 'APIKEY' : self._api_key }
         self._s = requests.Session()
+        self._api_url = api_url
 
     def _make_request(self, verb, uri, params=None, data=None, json=None, timeout=10.0):
         if verb not in ['GET', 'POST', 'PUT', 'DELETE']:
@@ -57,7 +58,7 @@ class Scdi:
            columns (list): a list of columns.
 
         """
-        uri = API_URL + self._username + '/' + bucketname + '?create'
+        uri = self._api_url + self._username + '/' + bucketname + '?create'
         payload = dict()
         payload['type'] = 'tabular'
         payload['columns'] = columns
@@ -88,7 +89,7 @@ class Scdi:
            columns (list): a list of columns.
 
         """
-        uri = API_URL + self._username + '/' + bucketname + '?create'
+        uri = self._api_url + self._username + '/' + bucketname + '?create'
         payload = dict()
         payload['type'] = 'timeseries'
         payload['columns'] = columns
@@ -119,7 +120,7 @@ class Scdi:
            columns (list): a list of columns.
 
         """
-        uri = API_URL + self._username + '/' + bucketname + '?create'
+        uri = self._api_url + self._username + '/' + bucketname + '?create'
         payload = dict()
         payload['type'] = 'geotemporal'
         payload['columns'] = columns
@@ -149,7 +150,7 @@ class Scdi:
            bucketname (str): name of the bucket.
 
         """
-        uri = API_URL + self._username + '/' + bucketname + '?create'
+        uri = self._api_url + self._username + '/' + bucketname + '?create'
         try:
             r = self._make_request('POST', uri, json={'type':'keyvalue'})
             r.raise_for_status()
@@ -176,7 +177,7 @@ class Scdi:
            bucketname (str): name of the bucket.
 
         """
-        uri = API_URL + self._username + '/' + bucketname + '?create'
+        uri = self._api_url + self._username + '/' + bucketname + '?create'
         try:
             r = self._make_request('POST', uri, json={'type':'object'})
             r.raise_for_status()
@@ -203,7 +204,7 @@ class Scdi:
            bucketname (str): name of the bucket.
 
         """
-        uri = API_URL + self._username + '/' + bucketname + '?delete'
+        uri = self._api_url + self._username + '/' + bucketname + '?delete'
         try:
             r = self._make_request('DELETE', uri)
             r.raise_for_status()
@@ -213,7 +214,7 @@ class Scdi:
 
     def get_buckets(self):
         """Get all buckets."""
-        uri = API_URL + self._username
+        uri = self._api_url + self._username
         r = self._make_request('GET', uri)
         if r.status_code == 200:
             return r.json()
@@ -228,7 +229,7 @@ class BaseBucket:
         self._bucketname = bucketname
 
     def get_info(self):
-        uri = API_URL + self._conn._username + '/' + self._bucketname + '?meta'
+        uri = self._api_url + self._conn._username + '/' + self._bucketname + '?meta'
         r = self._conn._make_request('GET', uri)
         if len(r.text) > 1:
             return r.json()
@@ -237,7 +238,7 @@ class BaseBucket:
 
     def list_objects(self):
         """List objects in a bucket."""
-        uri = API_URL + self._conn._username + '/' + self._bucketname + '?list'
+        uri = self._api_url + self._conn._username + '/' + self._bucketname + '?list'
         r = self._conn._make_request('GET', uri)
         if r.status_code == 200:
             return r.json()
@@ -249,7 +250,7 @@ class Kws(BaseBucket):
     def _put_part(self, objectName, partNumber, byteArr):
         md5hex = md5_ba(byteArr)
         headers = {'APIKEY': self._conn._api_key, 'Content-MD5': md5hex, 'Content-Length': str(len(byteArr))}
-        uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName
+        uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName
         try:
             r = self._conn._s.put(uri, params={'partNumber' : partNumber},
                 stream=True, data=byteArr, headers=headers)
@@ -278,7 +279,7 @@ class Kws(BaseBucket):
         Returns:
             bytes.
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName
+        uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName
         try:
             r = self._conn._make_request('GET', uri)
             r.raise_for_status()
@@ -295,7 +296,7 @@ class Kws(BaseBucket):
         Returns:
             str.
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName
+        uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName
         return uri
 
     def put_object(self, objectName, path, max_size=3000000):
@@ -319,7 +320,7 @@ class Kws(BaseBucket):
             # do single part upload
             md5hex = md5(path)
             headers = {'APIKEY': self._conn._api_key, 'Content-MD5': md5hex, 'Content-Length': flenght}
-            uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName
+            uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName
             try:
                 r = self._conn._s.put(uri, stream=True, data=open(path, 'rb'), headers=headers)
                 r.raise_for_status()
@@ -328,7 +329,7 @@ class Kws(BaseBucket):
             return r.text
         else:
             # do multipart upload
-            uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName + '?create'
+            uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName + '?create'
             try:
                 r = self._conn._make_request('POST', uri)
                 r.raise_for_status()
@@ -346,7 +347,7 @@ class Kws(BaseBucket):
                 if len(ba) > 0:
                     self._put_part(objectName, partNo, ba)
 
-            uri = API_URL + self._conn._username + '/' + self._bucketname + '/' + objectName + '?complete'
+            uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName + '?complete'
             try:
                 r = self._conn._make_request('POST', uri)
                 r.raise_for_status()
@@ -360,7 +361,7 @@ class Kws(BaseBucket):
         Args:
             objectName (str): name of the object.
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketName + '/' + objectName
+        uri = self._api_url + self._conn._username + '/' + self._bucketName + '/' + objectName
         r = self._conn._make_request('DELETE', uri)
         r.raise_for_status()
         return r.text
@@ -375,7 +376,7 @@ class Timeseries(BaseBucket):
         Returns:
             str. HTTP Response text.
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname
+        uri = self._api_url + self._conn._username + '/' + self._bucketname
         try:
             r = self._conn._make_request('PUT', uri, json=payload)
             r.raise_for_status()
@@ -392,7 +393,7 @@ class Timeseries(BaseBucket):
         Returns:
             str. HTTP Response text.
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname
+        uri = self._api_url + self._conn._username + '/' + self._bucketname
         try:
             r = self._conn._make_request('POST', uri + '?batch', json=payload)
             r.raise_for_status()
@@ -413,7 +414,7 @@ class Timeseries(BaseBucket):
         Returns:
             list. List of returned rows.
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname
+        uri = self._api_url + self._conn._username + '/' + self._bucketname
         payload = dict()
         if fromEpoch is not None: payload['fromEpoch'] = fromEpoch
         if toEpoch is not None: payload['toEpoch'] = toEpoch
@@ -445,7 +446,7 @@ class Keyvalue(BaseBucket):
             value (bytes): bytes
 
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname
+        uri = self._api_url + self._conn._username + '/' + self._bucketname
         r = self._conn._make_request('POST', uri, params={'key' : key}, data=value)
         r.raise_for_status()
         return r.content
@@ -460,7 +461,7 @@ class Keyvalue(BaseBucket):
             bytes. Value of a key.
 
         """
-        uri = API_URL + self._conn._username + '/' + self._bucketname
+        uri = self._api_url + self._conn._username + '/' + self._bucketname
         r = self._conn._make_request('GET', uri, params={'key' : key})
         r.raise_for_status()
         return r.content
