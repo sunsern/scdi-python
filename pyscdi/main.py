@@ -227,6 +227,7 @@ class BaseBucket:
     def __init__(self, conn, bucketname):
         self._conn = conn
         self._bucketname = bucketname
+        self._api_url = conn._api_url
 
     def get_info(self):
         uri = self._api_url + self._conn._username + '/' + self._bucketname + '?meta'
