@@ -3,6 +3,7 @@ from .utils import md5, md5_ba, getSize
 from .settings import API_URL
 import requests
 import logging
+import time
 
 formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 handler = logging.StreamHandler()
@@ -33,22 +34,37 @@ class Scdi:
         self._s = requests.Session()
         self._api_url = api_url
 
-    def _make_request(self, verb, uri, params=None, data=None, json=None, timeout=10.0):
+    def _make_request(self, verb, uri, params=None, data=None, json=None,
+            timeout=10.0, max_retries=3):
         if verb not in ['GET', 'POST', 'PUT', 'DELETE']:
             raise Exception('method not supported')
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                r = self._s.request(verb, uri, params=params,
+                        headers=self._headers, data=data, json=json, timeout=timeout)
+                r.raise_for_status()
+                return r
 
-        try:
-            r = self._s.request(verb, uri, params=params,
-                headers=self._headers, data=data, json=json, timeout=timeout)
-            return r
+            except requests.exceptions.HTTPError as e:
+                status_code = e.response.status_code
+                # resource not ready
+                # LOGGER.debug('status_code = {}'.format(status_code))
+                if status_code == 403:
+                    LOGGER.warn("Bucket not ready. Retrying...")
+                    retry_count += 1
+                    time.sleep(2.0)
+                    continue
+                else:
+                    raise e
 
-        except requests.exceptions.Timeout as e:
-            LOGGER.error("Connection timeout!")
-            raise e
+            except requests.exceptions.Timeout as e:
+                LOGGER.error("Connection timeout!")
+                raise e
 
-        except requests.exceptions.ConnectionError as e:
-            LOGGER.error("Connection error!")
-            raise e
+            except requests.exceptions.ConnectionError as e:
+                LOGGER.error("Connection error!")
+                raise e
 
     def create_tabular_bucket(self, bucketname, columns):
         """Creates a generic tabular bucket.
@@ -66,7 +82,7 @@ class Scdi:
             r = self._make_request('POST', uri, json=payload)
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
         return Tabular(self, bucketname)
 
     def get_tabular_bucket(self, bucketname):
@@ -97,7 +113,7 @@ class Scdi:
             r = self._make_request('POST', uri, json=payload)
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
         return Timeseries(self, bucketname)
 
     def get_timeseries_bucket(self, bucketname):
@@ -128,7 +144,7 @@ class Scdi:
             r = self._make_request('POST', uri, json=payload)
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
         return Geotemporal(self, bucketname)
 
     def get_geotemporal_bucket(self, bucketname):
@@ -155,7 +171,7 @@ class Scdi:
             r = self._make_request('POST', uri, json={'type':'keyvalue'})
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
         return Keyvalue(self, bucketname)
 
     def get_keyvalue_bucket(self, bucketname):
@@ -182,7 +198,7 @@ class Scdi:
             r = self._make_request('POST', uri, json={'type':'object'})
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
         return Kws(self, bucketname)
 
     def get_kws_bucket(self, bucketname):
@@ -209,7 +225,7 @@ class Scdi:
             r = self._make_request('DELETE', uri)
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
         return r
 
     def get_buckets(self):
@@ -257,7 +273,7 @@ class Kws(BaseBucket):
                 stream=True, data=byteArr, headers=headers)
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
+            LOGGER.warn(e.response.text)
 
     def get_object_as_file(self, objectName, filename):
         """Downloads an object as a file
@@ -284,9 +300,10 @@ class Kws(BaseBucket):
         try:
             r = self._conn._make_request('GET', uri)
             r.raise_for_status()
+            return r.content
+
         except requests.exceptions.HTTPError as e:
-            LOGGER.warn(r.text)
-        return r.content
+            LOGGER.warn(e.response.text)
 
     def get_object_url(self, objectName):
         """Gets the object URL.
@@ -325,9 +342,10 @@ class Kws(BaseBucket):
             try:
                 r = self._conn._s.put(uri, stream=True, data=open(path, 'rb'), headers=headers)
                 r.raise_for_status()
+                return r.text
             except requests.exceptions.HTTPError as e:
-                LOGGER.warn(r.text)
-            return r.text
+                LOGGER.warn(e.response.text)
+
         else:
             # do multipart upload
             uri = self._api_url + self._conn._username + '/' + self._bucketname + '/' + objectName + '?create'
@@ -335,7 +353,7 @@ class Kws(BaseBucket):
                 r = self._conn._make_request('POST', uri)
                 r.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                LOGGER.error(r.text)
+                LOGGER.error(e.response.text)
 
             partNo = 1
             with open(path, 'rb') as fh:
@@ -352,9 +370,10 @@ class Kws(BaseBucket):
             try:
                 r = self._conn._make_request('POST', uri)
                 r.raise_for_status()
+                return r.text
             except requests.exceptions.HTTPError as e:
-                LOGGER.error(r.text)
-            return r.text
+                LOGGER.error(e.response.text)
+
 
     def delete_object(self, objectName):
         """Deletes an object.
@@ -381,9 +400,11 @@ class Timeseries(BaseBucket):
         try:
             r = self._conn._make_request('PUT', uri, json=payload)
             r.raise_for_status()
+            return r.text
         except requests.exceptions.HTTPError as e:
-            LOGGER.error(r.text)
-        return r.text
+            LOGGER.error(e.response.text)
+
+
 
     def add_rows(self, payload):
         """Adds multiple rows to the timeseries bucket.
@@ -398,9 +419,10 @@ class Timeseries(BaseBucket):
         try:
             r = self._conn._make_request('POST', uri + '?batch', json=payload)
             r.raise_for_status()
+            return r.text
         except requests.exceptions.HTTPError as e:
-            LOGGER.error(r.text)
-        return r.text
+            LOGGER.error(e.response.text)
+
 
     def query(self, fromEpoch=None, toEpoch=None, limit=None, where=None, aggregate=None):
         """Queries data
@@ -425,12 +447,13 @@ class Timeseries(BaseBucket):
         try:
             r = self._conn._make_request('POST', uri + '?query', json=payload)
             r.raise_for_status()
+            if len(r.text) > 1:
+                return r.json()
+            else:
+                return []
         except requests.exceptions.HTTPError as e:
-            LOGGER.error(r.text)
-        if len(r.text) > 1:
-            return r.json()
-        else:
-            return []
+            LOGGER.error(e.response.text)
+
 
 class Geotemporal(Timeseries):
     pass
