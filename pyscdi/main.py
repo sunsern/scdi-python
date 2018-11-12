@@ -30,7 +30,10 @@ class Scdi:
         """
         self._username = username
         self._api_key = api_key
-        self._headers = { 'APIKEY' : self._api_key }
+        self._headers = {
+            'APIKEY': self._api_key,
+            'User-Agent': 'pyscdi/0.2'
+        }
         self._s = requests.Session()
         self._api_url = api_url
 
