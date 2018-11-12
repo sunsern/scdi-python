@@ -35,7 +35,7 @@ class Scdi:
         self._api_url = api_url
 
     def _make_request(self, verb, uri, params=None, data=None, json=None,
-            timeout=10.0, max_retries=3):
+            timeout=10.0, max_retries=10):
         if verb not in ['GET', 'POST', 'PUT', 'DELETE']:
             raise Exception('method not supported')
         retry_count = 0
@@ -53,7 +53,7 @@ class Scdi:
                 if status_code == 403:
                     LOGGER.warn("Bucket not ready. Retrying...")
                     retry_count += 1
-                    time.sleep(2.0)
+                    time.sleep(3.0)
                     continue
                 else:
                     raise e
