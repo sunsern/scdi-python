@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pyscdi',
-      version='0.2.1',
+      version='0.2.2',
       description='Python binding for SCDI',
       url='http://github.com/sunsern/scdi-python',
       author='Sunsern Cheamanunkul',
